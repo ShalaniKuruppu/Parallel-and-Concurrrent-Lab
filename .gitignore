@@ -1,2 +1,3 @@
 .vscode 
-llist_lab
+# gcc -g -Wall -o pth_llist_lab llist_lab.c -lpthread
+# ./pth_llist_lab mutex 1 1000 10000 0.99 0.005 0.005 50 

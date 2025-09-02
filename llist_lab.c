@@ -4,6 +4,8 @@
 // Times ONLY the m operations region (per lab spec).
 
 #define _GNU_SOURCE
+// Windows doesn't support rand_r; fallback to rand
+#define rand_r(seedp) rand()
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -43,6 +45,7 @@ typedef struct {
     int end_idx;     // exclusive
     task_t* ops;     // shared array of m ops
     run_mode_t mode;
+    pthread_barrier_t* start_barrier; 
 } thread_arg_t;
 
 // ------- utilities -------
@@ -131,6 +134,9 @@ static bool Delete_rw(int value) {
 static void* worker(void* argp) {
     thread_arg_t* a = (thread_arg_t*)argp;
 
+    if (a->start_barrier)               // for serial we pass NULL
+        pthread_barrier_wait(a->start_barrier);
+
     for (int i = a->start_idx; i < a->end_idx; i++) {
         task_t t = a->ops[i];
         switch (a->mode) {
@@ -189,48 +195,62 @@ static void build_ops(task_t* ops, int m, double mMember, double mInsert, double
 }
 
 // ------- run one experiment -------
-static double run_once(run_mode_t mode, int thread_count, int m, task_t* ops)
-{
+static double run_once(run_mode_t mode, int thread_count, int m, task_t* ops) {
     if (mode == MODE_RWLOCK) pthread_rwlock_init(&list_rwlock, NULL);
+    if (mode == MODE_SERIAL) thread_count = 1;
 
-    pthread_t* th = (pthread_t*)malloc(sizeof(pthread_t)*thread_count);
-    thread_arg_t* args = (thread_arg_t*)malloc(sizeof(thread_arg_t)*thread_count);
+    pthread_t* th = malloc(sizeof(pthread_t)*thread_count);
+    thread_arg_t* args = malloc(sizeof(thread_arg_t)*thread_count);
     if (!th || !args) { perror("malloc"); exit(1); }
 
-    int base = 0;
-    int chunk = m / thread_count;
-    int rem = m % thread_count;
+    // ---- NEW: barrier only for parallel modes ----
+    pthread_barrier_t start_barrier;
+    pthread_barrier_t* bar_ptr = NULL;
+    if (mode != MODE_SERIAL) {
+        // +1 for the main thread that releases the start
+        pthread_barrier_init(&start_barrier, NULL, thread_count + 1);
+        bar_ptr = &start_barrier;
+    }
 
-    uint64_t t0 = nsecs_now();
-
-    for (int t=0;t<thread_count;t++) {
+    int base = 0, chunk = m / thread_count, rem = m % thread_count;
+    for (int t = 0; t < thread_count; t++) {
         int len = chunk + (t < rem ? 1 : 0);
         args[t].thread_id = t;
         args[t].start_idx = base;
         args[t].end_idx   = base + len;
-        args[t].ops = ops;
-        args[t].mode = mode;
+        args[t].ops       = ops;
+        args[t].mode      = mode;
+        args[t].start_barrier = bar_ptr;      // <-- pass barrier (or NULL for serial)
         base += len;
 
-        if (mode == MODE_SERIAL && thread_count==1) {
-            worker(&args[t]); // no thread creation
+        if (mode == MODE_SERIAL) {
+            // no thread creation; we'll call worker() directly below
         } else {
             int rc = pthread_create(&th[t], NULL, worker, &args[t]);
             if (rc) { fprintf(stderr, "pthread_create: %s\n", strerror(rc)); exit(1); }
         }
     }
 
-    if (!(mode == MODE_SERIAL && thread_count==1)) {
-        for (int t=0;t<thread_count;t++) pthread_join(th[t], NULL);
-    }
+    uint64_t t0, t1;
 
-    uint64_t t1 = nsecs_now();
+    if (mode == MODE_SERIAL) {
+        t0 = nsecs_now();
+        worker(&args[0]);                     // single-threaded loop only
+        t1 = nsecs_now();
+    } else {
+        // Start the clock immediately before releasing all workers
+        t0 = nsecs_now();
+        pthread_barrier_wait(&start_barrier); // all workers begin their loops now
+        for (int t = 0; t < thread_count; t++) pthread_join(th[t], NULL);
+        t1 = nsecs_now();
+        pthread_barrier_destroy(&start_barrier);
+    }
 
     if (mode == MODE_RWLOCK) pthread_rwlock_destroy(&list_rwlock);
     free(th); free(args);
-
-    return (t1 - t0) / 1e6; // milliseconds
+    return (t1 - t0) / 1e6; // ms
 }
+
 
 // Usage:
 //   ./llist_lab <mode> <threads> <n> <m> <mMember> <mInsert> <mDelete> <runs>
