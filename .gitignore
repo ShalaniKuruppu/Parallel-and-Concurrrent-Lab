@@ -1,3 +1,14 @@
 .vscode 
 # gcc -g -Wall -o pth_llist_lab llist_lab.c -lpthread
 # ./pth_llist_lab mutex 1 1000 10000 0.99 0.005 0.005 50 
+
+
+# n = 1,000 and m = 10,000, mMember = 0.99, mIndert = 0.005, mDelete = 0.005
+# //   ./llist_lab <mode> <threads> <n> <m> <mMember> <mInsert> <mDelete> <runs>
+# // Modes: serial | mutex | rwlock
+
+
+# ./pth_llist_lab rwlock 1 1000 10000 0.99 0.005 0.005 100
+
+
+# n = 1,000 and m = 10,000, mMember = 0.99, mIndert = 0.005, mDelete = 0.005
