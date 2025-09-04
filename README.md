@@ -26,7 +26,7 @@ gcc -g -Wall -o pth_llist_lab llist_lab.c -lpthread
 ## Running the Program
 
 ```bash
-./llist_lab <mode> <threads> <n> <m> <mMember> <mInsert> <mDelete> <runs>
+.\pth_llist_lab.exe <mode> <threads> <n> <m> <mMember> <mInsert> <mDelete> <runs>
 ```
 ---
 
@@ -46,7 +46,7 @@ gcc -g -Wall -o pth_llist_lab llist_lab.c -lpthread
 ## Example
 
 ```bash
-./llist_lab rwlock 4 1000 10000 0.99 0.005 0.005 100
+.\pth_llist_lab.exe rwlock 4 1000 10000 0.99 0.005 0.005 100
 ```
 
 This runs the program in RWLock mode with 4 threads, an initial list size of 1000, 10,000 operations, 99% member, 0.5% insert, 0.5% delete, repeated 100 times.
