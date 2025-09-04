@@ -32,14 +32,14 @@ pth_llist_lab.exe <mode> <threads> <n> <m> <mMember> <mInsert> <mDelete> <runs>
 
 ## Arguments
 
-\<mode> - One of: serial / mutex / rwlock
-\<threads> - Number of worker threads (ignored for serial)
-\<n> - Initial number of nodes in the list
-\<m> - Total number of operations to perform
-\<mMember> - Fraction of operations that are Member() lookups
-\<mInsert> - Fraction of operations that are Insert()
-\<mDelete> - Fraction of operations that are Delete()
-\<runs> - Number of runs
+- \<mode> - One of: serial / mutex / rwlock
+- \<threads> - Number of worker threads (ignored for serial)
+- \<n> - Initial number of nodes in the list
+- \<m> - Total number of operations to perform
+- \<mMember> - Fraction of operations that are Member() lookups
+- \<mInsert> - Fraction of operations that are Insert()
+- \<mDelete> - Fraction of operations that are Delete()
+- \<runs> - Number of runs
 
 ---
 
