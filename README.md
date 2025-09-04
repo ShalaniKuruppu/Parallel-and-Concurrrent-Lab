@@ -17,7 +17,7 @@ This lab benchmarks a sorted singly linked list under three synchronization stra
 We used Visual Studio Code with the MinGW compiler to build the program.
 
 ```bash
-gcc -g -Wall -o pth_llist_lab.exe llist_lab.c -lpthread
+gcc -g -Wall -o pth_llist_lab llist_lab.c -lpthread
 ```
 
 
